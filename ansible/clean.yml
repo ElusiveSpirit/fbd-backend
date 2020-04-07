@@ -1,0 +1,26 @@
+- hosts: server
+
+  vars:
+    app_path: "/data/branches/{{ branch_name }}/"
+    docker_compose_file: "docker-compose.fbd.yml"
+
+  tasks:
+    - name: Check that the docker-compose.fbd.yml exists
+      stat:
+        path: "{{ app_path }}/{{ docker_compose_file }}"
+      register: stat_result
+
+    - name: docker-compose down
+      shell:
+        cmd: "docker-compose -f {{ docker_compose_file }} down -v"
+        chdir: "{{ app_path }}"
+      when: stat_result.stat.exists == True
+
+    - name: Clean files
+      file:
+        path: "{{ app_path }}"
+        state: absent
+      become: true
+      become_method: sudo
+      become_user: root
+      when: branch_name != ""

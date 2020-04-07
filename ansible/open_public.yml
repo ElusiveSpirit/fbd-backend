@@ -1,0 +1,16 @@
+- hosts: server
+
+  vars:
+    app_path: "/data/fbd-backend/"
+    compose: docker-compose.prod.yml
+
+  tasks:
+    - name: Grant public access
+      replace:
+        path: "{{ app_path }}/docker-compose.yml"
+        regexp: "    # public closed"
+        replace: "    "
+
+    - name: Start docker compose
+      docker_compose:
+        project_src: "{{ app_path }}"

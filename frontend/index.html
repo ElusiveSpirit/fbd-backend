@@ -1,0 +1,93 @@
+<div id="app">
+    <h2>Dev</h2>
+    <div>
+        <span>Доступность: </span>
+        <span v-if="!statusLoaded">Обновление статуса</span>
+        <span v-else-if="opened">❗ ️Открыто</span>
+        <span v-else>🔒 Закрыто</span>
+    </div>
+    <span v-if="!statusLoaded || loading">Загрузка</span>
+    <div v-else>
+        <button v-if="opened" @click="closeAccess">Close public access</button>
+        <button v-else @click="openAccess">Open public access</button>
+    </div>
+    <h4>Сервера</h4>
+    <ul>
+        <span v-if="serverLoading">Загрузка</span>
+        <li
+            v-else
+            v-for="server in serversList"
+            :key="server.slug"
+        >
+            <a :href="getLinkForSlug(server.slug)" target="_blank">{{ server.slug }}</a>
+        </li>
+    </ul>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  var app = new Vue({
+    el: '#app',
+    data: () => ({
+      loading: true,
+      statusLoading: true,
+      serverLoading: true,
+      opened: null,
+      serversList: []
+    }),
+    computed: {
+      statusLoaded() {
+        return this.opened !== null
+      }
+    },
+    async created() {
+      this.fetchServers();
+      this.loading = true
+      await this.getAccessStatus();
+      this.loading = false
+      setInterval(this.getAccessStatus, 1000);
+    },
+    methods: {
+      getLinkForSlug: slug => `http://${slug}.${location.host}`,
+      async fetchServers() {
+        this.serverLoading = true
+        try {
+          const { data: { servers } } = await axios.get('/servers')
+          this.serversList = servers
+        } catch (e) {
+          console.error(e)
+        }
+        this.serverLoading = false
+      },
+      async getAccessStatus() {
+        this.statusLoading = true
+        try {
+          const { data } = await axios.get('/public')
+          this.opened = data.opened
+        } catch (e) {
+          console.error(e)
+        }
+        this.statusLoading = false
+      },
+      async openAccess() {
+        this.loading = true
+        try {
+            await axios.post('/public/open')
+        } catch (e) {
+          console.error(e)
+        }
+        this.loading = false
+      },
+      async closeAccess() {
+        this.loading = true
+        try {
+            await axios.post('/public/close')
+        } catch (e) {
+          console.error(e)
+        }
+        this.loading = false
+      }
+    }
+  })
+</script>

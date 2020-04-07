@@ -1,0 +1,38 @@
+- hosts: server
+
+  vars:
+    app_path: "/data/fbd-backend/"
+    compose: docker-compose.prod.yml
+
+  tasks:
+    - name: Creates directory "{{ app_path }}"
+      file:
+        path: "{{ app_path }}"
+        state: directory
+
+    - name: Copy sources
+      synchronize:
+        src: "{{ item.source}}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - { source: '../ansible', dest: "{{ app_path }}" }
+        - { source: '../compose', dest: "{{ app_path }}" }
+        - { source: '../frontend', dest: "{{ app_path }}" }
+        - { source: '../app', dest: "{{ app_path }}" }
+        - { source: '../Pipfile', dest: '{{ app_path }}Pipfile' }
+        - { source: '../Pipfile.lock', dest: '{{ app_path }}Pipfile.lock' }
+
+    - name: .env
+      copy:
+        src: "../.env.example"
+        dest: "{{ app_path }}/.env"
+
+    - name: Copy docker compose file
+      copy:
+        src: "../docker-compose.prod.yml"
+        dest: "{{ app_path }}/docker-compose.yml"
+
+    - name: Start docker compose
+      docker_compose:
+        project_src: "{{ app_path }}"
+        build: yes

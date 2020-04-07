@@ -1,0 +1,31 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+black = "==19.10b0"
+isort = "*"
+autoflake = "*"
+wemake-python-styleguide = "*"
+mypy = "*"
+flake8-fixme = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-asyncio = "*"
+pytest-xdist = "*"
+pytest-mock = "*"
+mock = "*"
+
+[packages]
+ansible = "*"
+fastapi = "*"
+uvicorn = "*"
+requests = "*"
+redis = "*"
+loguru = "*"
+celery = "*"
+ujson = "*"
+
+[requires]
+python_version = "3.7"

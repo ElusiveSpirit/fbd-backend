@@ -1,0 +1,41 @@
+image: python:3.7
+
+stages:
+  - lint
+  - test
+  - deploy
+
+lint:
+  stage: lint
+  before_script:
+    - pip install pipenv
+    - pipenv install --system --dev
+  script:
+    - scripts/lint
+
+pytest:
+  stage: test
+  before_script:
+    - pip install pipenv
+    - pipenv install --system --dev
+  script:
+    - scripts/test-cov-html
+  coverage: '/TOTAL.+?(\d+.?\d+%)/'
+
+ansible-deploy:
+  stage: deploy
+  image: ansible:latest
+  before_script:
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > $CI_PROJECT_DIR/.id_rsa
+    - chmod 600 $CI_PROJECT_DIR/.id_rsa
+    - cd ansible
+  script:
+    - ansible-playbook --private-key=$CI_PROJECT_DIR/.id_rsa deploy.yml
+  needs:
+    - lint
+    - pytest
+  variables:
+    ANSIBLE_CONFIG: '$CI_PROJECT_DIR/ansible/ansible.cfg'
+  only:
+    refs:
+      - master

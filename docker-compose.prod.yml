@@ -1,0 +1,62 @@
+version: '3'
+
+networks:
+  proxy-net:
+    external: true
+
+volumes:
+  fbd-redis:
+
+services:
+  nginx:
+    image: nginx:1.13.7
+    volumes:
+      - ./compose/production/nginx/conf/:/etc/nginx/conf.d/:ro
+      - ./ansible/files/.htpasswd:/etc/nginx/.htpasswd:ro
+    depends_on:
+      - fastapi
+      - nginx-proxy
+    ports:
+      - 80:80
+    # public closed  - 8000:80  # public gate
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - default
+      - proxy-net
+
+  fastapi: &fastapi
+    build:
+      context: .
+      dockerfile: ./compose/production/fastapi/Dockerfile
+    image: fbd_production_fasapi
+    volumes:
+      - /home/centos/.ssh/id_rsa:/.id_rsa:ro
+    restart: always
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULTS_BACKEND: redis://redis:6379/2
+    command: /start
+
+  celeryworker:
+    <<: *fastapi
+    image: fbd_production_celeryworker
+    command: /start-celeryworker
+
+  celerybeat:
+    <<: *fastapi
+    image: fbd_production_celerybeat
+    command: /start-celerybeat
+
+  redis:
+    image: redis:latest
+    restart: always
+    volumes:
+      - fbd-redis:/data/
